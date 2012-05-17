@@ -45,6 +45,7 @@ def id2uri(id)
     return out
 end
 
+
 class Despot
     attr_accessor :username, :password, :host, :port
     attr_accessor :track_cache
@@ -59,6 +60,46 @@ class Despot
         @playlists = []
         @tracks = {}
         @track_cache = {}
+    end
+
+    def write_playlist(playlist, outputdir)
+        begin
+            Dir.mkdir(outputdir)
+        rescue
+        end
+
+        tl = XSPF::Tracklist.new()
+        playlist[:tracks].each do |track|
+            track[:to_link] = "spotify:track:" + track[:uri]
+            # spotify:track:6sVQNUvcVFTXvlk3ec0ngd
+            t = XSPF::Track.new( {
+                  :location => track[:to_link],
+                  :identifier => track[:to_link],
+                  :title => track[:title].sq,
+                  :creator => track[:artist].sq,
+                  :tracknum => track[:index].to_s,
+                  :album => track[:album].sq
+                } )
+            tl << t
+        end
+
+        pluri = id2uri(playlist[:pid])
+        xspf_pl = XSPF::Playlist.new( {
+                   :xmlns => 'http://xspf.org/ns/0/',
+                   :title => playlist[:name].sq,
+                   :creator => "Spotify/#{username}", # spotify link?
+                   :license => 'Redistribution or sharing not allowed',
+                   :info => "spotify:user:#{@username}:playlist:#{pluri}",
+                   :tracklist => tl,
+                   :meta_rel => 'http://www.example.org/key',
+                   :meta_content => 'value'
+                 } )
+
+        xspf = XSPF.new( { :playlist => xspf_pl } )
+        safename = playlist[:name].gsub(/[^0-9a-zA-Z]/, "_")
+        f = File.open(outputdir + "/playlist-#{@username}-#{playlist[:pid]}-#{safename}.xspf", 'w')
+        f.write(xspf.to_xml)
+        f.close
     end
 
     def cmd(command, *params)
@@ -94,13 +135,14 @@ class Despot
         $stderr.puts r.inspect
     end
 
-    def load_playlists
+    def load_playlists(outputdir, username)
         $stderr.puts("L /pl/all")
         dom, junk = self.cmd("playlist", "0000000000000000000000000000000000")
-        playlist_ids = dom.at("//items").inner_text.strip.split(',')
+        playlist_ids = dom.at("//items").inner_text.strip.split(',').map{|pid| pid.strip}
         playlist_ids[0..2].each do |p|
             $stderr.puts("L /pl/#{p[0..33]}")
-            self.load_playlist(p[0..33])
+            pl = self.load_playlist(p[0..33])
+            self.write_playlist(pl, outputdir)
         end
     end
 
@@ -124,7 +166,9 @@ end
         end
 
         $stderr.puts "+ playlist #{name}"
-        @playlists << {:name => name, :pid => pid, :tracks => tracks}
+        x = {:name => name, :pid => pid, :tracks => tracks}
+        @playlists << x
+        return x
     end
 
     def load_track(tid)
@@ -183,39 +227,4 @@ end
 
 dsp = Despot.new(username, password, 'localhost', 9988)
 dsp.login()
-dsp.load_playlists()
-
-dsp.playlists.each_with_index do |playlist, i|
-    tl = XSPF::Tracklist.new()
-    playlist[:tracks].each do |track|
-        track[:to_link] = "spotify:track:" + track[:uri]
-        # spotify:track:6sVQNUvcVFTXvlk3ec0ngd
-        t = XSPF::Track.new( {
-              :location => track[:to_link],
-              :identifier => track[:to_link],
-              :title => track[:title].sq,
-              :creator => track[:artist].sq,
-              :tracknum => track[:index].to_s,
-              :album => track[:album].sq
-            } )
-        tl << t
-    end
-
-    xspf_pl = XSPF::Playlist.new( {
-               :xmlns => 'http://xspf.org/ns/0/',
-               :title => playlist[:name].sq,
-               :creator => "Spotify/#{username}", # spotify link?
-               :license => 'Redistribution or sharing not allowed',
-               :info => 'http://www.example.com/',
-               :tracklist => tl,
-               :meta_rel => 'http://www.example.org/key',
-               :meta_content => 'value'
-             } )
-
-    xspf = XSPF.new( { :playlist => xspf_pl } )
-    safename = playlist[:name].gsub(/[^0-9a-zA-Z]/, "_")
-    f = File.open(outputdir + "/playlist-#{username}-#{i}-#{safename}.xspf", 'w')
-    f.write(xspf.to_xml)
-    f.close
-end
-
+dsp.load_playlists(outputdir, username)
