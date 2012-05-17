@@ -3,6 +3,7 @@ require 'nokogiri'
 require 'json'
 require 'socket'
 require 'xspf'
+require 'uri'
 
 EncodeAlphabet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ+/";
 EncodeHash = {}
@@ -163,15 +164,8 @@ end
         # need the map/strip because occasional tids have a \n prefix
         track_ids = dom.at("//items").inner_text.strip.split(",").map{|tid| tid.strip}
 
-        # local tracks get returned as "spotify:blah" IDs instead of hex
-        local_tracks = track_ids.select {|tid| tid =~ /spotify:/}
-        nonlocal_tracks = track_ids - local_tracks
-
-        # look up the non-local tracks with the API
-        tracks = nonlocal_tracks.map {|tid| self.load_track(tid[0..31])}
-        if local_tracks.size > 0 then
-            tracks << local_tracks
-        end
+        # fetch information about our tracks from the API (or not the API, depending)
+        tracks = track_ids.map {|tid| self.load_track(tid)}
 
         $stderr.puts "+ playlist #{name}"
         x = {:name => name, :pid => pid, :tracks => tracks}
@@ -183,6 +177,17 @@ end
         if not @track_cache[tid].nil? then
             return @track_cache[tid]
         end
+
+        if tid =~ /^spotify:local/ then
+            # we can't look this track up remotely
+            s, l, artist, album, title, index = tid.split(/:/).map{|i| URI.unescape(i.gsub(/\+/,' '))}
+            track = {:title => title, :artist => artist, :album => album, :tid => tid, :uri => tid}
+            @track_cache[tid] = track
+            return track
+        end
+
+        # trim to 32 hex characters
+        tid = tid[0..31]
 
         dom, junk = self.cmd("browsetrack", tid)
 
