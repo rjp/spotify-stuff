@@ -91,7 +91,7 @@ class Despot
             tl << t
         end
 
-        pluri = id2uri(playlist[:pid])
+        pluri = id2uri(playlist[:pid][0..31])
         xspf_pl = XSPF::Playlist.new( {
                    :xmlns => 'http://xspf.org/ns/0/',
                    :title => playlist[:name].sq,
