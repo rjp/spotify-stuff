@@ -42,7 +42,9 @@ def id2uri(id)
         break if newlen == 0
     end
 
-    return out
+    # we might not have used up all 22 characters here
+    # remove any prefixed whitespace (spotted by andym)
+    return out.strip
 end
 
 
