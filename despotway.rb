@@ -84,7 +84,8 @@ class Despot
                   :location => track[:to_link],
                   :title => track[:title].sq,
                   :creator => track[:artist].sq,
-                  :album => track[:album].sq
+                  :album => track[:album].sq,
+                  :duration => track[:duration].sq
                 } )
             # we don't always have an ISRC code
             if not track[:isrc].nil? then
@@ -211,10 +212,11 @@ end
             artist = dom.at("//track/artist").inner_text.strip
             album = dom.at("//track/album").inner_text.strip
             index = dom.at("//track/track-number").inner_text.strip
+            duration = dom.at("//track/length").inner_text.strip
 
             uri = id2uri(tid)
 
-            track = {:title => title, :artist => artist, :album => album, :tid => tid, :uri => uri, :index => index}
+            track = {:title => title, :artist => artist, :album => album, :tid => tid, :uri => uri, :index => index, :duration => duration}
 
             eid = dom.at("//track/external-ids/external-id")
             if not eid.nil? and eid['type'] == 'isrc' then
