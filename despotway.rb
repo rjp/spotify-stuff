@@ -76,12 +76,18 @@ class Despot
             # spotify:track:6sVQNUvcVFTXvlk3ec0ngd
             t = XSPF::Track.new( {
                   :location => track[:to_link],
-                  :identifier => "isrc:" + track[:isrc],
                   :title => track[:title].sq,
                   :creator => track[:artist].sq,
-                  :tracknum => track[:index].to_s,
                   :album => track[:album].sq
                 } )
+            # we don't always have an ISRC code
+            if not track[:isrc].nil? then
+                  t[:identifier] = "isrc:" + track[:isrc]
+            end
+            # we don't always have a track number
+            if not track[:index].nil? then
+                  t[:tracknum] = track[:index].to_s
+            end
             tl << t
         end
 
