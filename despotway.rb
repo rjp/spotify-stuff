@@ -73,7 +73,12 @@ class Despot
 
         tl = XSPF::Tracklist.new()
         playlist[:tracks].each do |track|
-            track[:to_link] = "http://open.spotify.com/track/" + track[:uri]
+            # A finger of fudge is not enough to paper over the gash of the Spotify API
+            if track[:uri] =~ /^spotify/ then
+                track[:to_link] = track[:uri]
+            else
+                track[:to_link] = "http://open.spotify.com/track/" + track[:uri]
+            end
             # spotify:track:6sVQNUvcVFTXvlk3ec0ngd
             t = XSPF::Track.new( {
                   :location => track[:to_link],
