@@ -88,11 +88,11 @@ class Despot
                 } )
             # we don't always have an ISRC code
             if not track[:isrc].nil? then
-                  t[:identifier] = "isrc:" + track[:isrc]
+                  t.identifier = "isrc:" + track[:isrc]
             end
             # we don't always have a track number
             if not track[:index].nil? then
-                  t[:tracknum] = track[:index].to_s
+                  t.tracknum = track[:index].to_s
             end
             tl << t
         end
