@@ -160,6 +160,13 @@ class Despot
 if dom.nil? then
     raise ArgumentError, junk.inspect
 end
+        user = dom.at("//user").inner_text.strip
+
+#        if user != @username then
+#            $stderr.puts "We don't handle subscribed playlists properly yet, sorry!"
+#            return nil
+#        end
+
         name = dom.at("//name").inner_text.strip
         # need the map/strip because occasional tids have a \n prefix
         track_ids = dom.at("//items").inner_text.strip.split(",").map{|tid| tid.strip}
@@ -168,7 +175,7 @@ end
         tracks = track_ids.map {|tid| self.load_track(tid)}
 
         $stderr.puts "+ playlist #{name}"
-        x = {:name => name, :pid => pid, :tracks => tracks}
+        x = {:name => name, :pid => pid, :tracks => tracks, :user => user}
         @playlists << x
         return x
     end
