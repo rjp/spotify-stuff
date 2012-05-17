@@ -88,7 +88,8 @@ class Despot
                    :xmlns => 'http://xspf.org/ns/0/',
                    :title => playlist[:name].sq,
                    :creator => "Spotify/#{username}", # spotify link?
-                   :info => "spotify:user:#{@username}:playlist:#{pluri}",
+                   :info => "http://open.spotify.com/user/#{@username}",
+                   :location => "http://open.spotify.com/user/#{@username}/playlist/#{pluri}",
                    :tracklist => tl,
                    :meta_rel => 'http://www.example.org/key',
                    :meta_content => 'value'
