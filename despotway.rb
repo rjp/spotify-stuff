@@ -155,7 +155,7 @@ class Despot
                 # we have a UPC, smoosh it into the identifier if we have one
                 if not upc.nil? then
                     old = t.identifier
-                    t.identifier = [old, "upc:#{upc}"].join(' ')
+                    t.identifier = [old, "upc:#{upc}"].join('')
                 end
             end
 
@@ -169,6 +169,7 @@ class Despot
                    :creator => "Spotify/#{username}", # spotify link?
                    :info => "http://open.spotify.com/user/#{playlist[:user]}",
                    :location => "http://open.spotify.com/user/#{playlist[:user]}/playlist/#{pluri}",
+                   :identifier => "http://open.spotify.com/user/#{playlist[:user]}/playlist/#{pluri}",
                    :tracklist => tl,
                    :meta_rel => 'http://www.example.org/key',
                    :meta_content => 'value'
