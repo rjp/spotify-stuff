@@ -51,23 +51,24 @@ end
 
 class Despot
     attr_accessor :username, :password, :host, :port
-    attr_accessor :track_cache
+    attr_accessor :track_cache, :outputdir
     attr_accessor :socket, :playlists, :tracks
 
-    def initialize(username, password, host, port)
+    def initialize(username, password, host, port, outputdir)
         @host = host
         @port = port
         @username = username
         @password = password
+        @outputdir = outputdir
         @socket = TCPSocket.new(host, port)
         @playlists = []
         @tracks = {}
         @track_cache = {}
     end
 
-    def write_playlist(playlist, outputdir)
+    def write_playlist(playlist)
         begin
-            Dir.mkdir(outputdir)
+            Dir.mkdir(@outputdir)
         rescue
         end
 
@@ -111,7 +112,7 @@ class Despot
 
         xspf = XSPF.new( { :playlist => xspf_pl } )
         safename = playlist[:name].gsub(/[^0-9a-zA-Z]/, "_")
-        f = File.open(outputdir + "/playlist-#{@username}-#{playlist[:pid]}-#{safename}.xspf", 'w')
+        f = File.open(@outputdir + "/playlist-#{@username}-#{playlist[:pid]}-#{safename}.xspf", 'w')
         f.write(xspf.to_xml)
         f.close
     end
@@ -156,7 +157,9 @@ class Despot
         playlist_ids[0..2].each do |p|
             $stderr.puts("L /pl/#{p[0..33]}")
             pl = self.load_playlist(p[0..33])
-            self.write_playlist(pl, outputdir)
+            if not pl.nil? then
+                self.write_playlist(pl)
+            end
         end
     end
 
@@ -250,6 +253,6 @@ begin
 rescue
 end
 
-dsp = Despot.new(username, password, 'localhost', 9988)
+dsp = Despot.new(username, password, 'localhost', 9988, outputdir)
 dsp.login()
 dsp.load_playlists(outputdir, username)
