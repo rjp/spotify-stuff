@@ -128,6 +128,10 @@ class Despot
             if track[:uri] =~ /^spotify/ then
                 track[:to_link] = track[:uri]
             else
+                if track[:uri].nil? then # shouldn't happen because we protect against this in load_track
+                    $stderr.puts "!! #{track.inspect} has no URI in output"
+                    track[:uri] = "_daddy_"
+                end
                 track[:to_link] = "http://open.spotify.com/track/" + track[:uri]
             end
             # spotify:track:6sVQNUvcVFTXvlk3ec0ngd
@@ -288,6 +292,10 @@ end
             duration = dom.at("//track/length").inner_text.strip
 
             uri = id2uri(tid)
+            if uri.nil? then
+                $stderr.puts "!! #{tid} doesn't map to a URI somehow"
+                uri = "_whoops_#{tid}_"
+            end
 
             almeta = self.album_metadata(album_id)
 
