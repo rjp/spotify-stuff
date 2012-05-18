@@ -4,6 +4,9 @@ require 'json'
 require 'socket'
 require 'xspf'
 require 'uri'
+require 'open-uri'
+
+### id2uri ## cargo-culted from lib/despotify.c
 
 EncodeAlphabet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ+/";
 EncodeHash = {}
@@ -48,10 +51,11 @@ def id2uri(id)
     return out.strip
 end
 
+### Despot ## our interface to despotify-gateway
 
 class Despot
     attr_accessor :username, :password, :host, :port
-    attr_accessor :track_cache, :outputdir
+    attr_accessor :track_cache, :outputdir, :metacache, :metafile
     attr_accessor :socket, :playlists, :tracks
 
     def initialize(username, password, host, port, outputdir)
@@ -60,10 +64,50 @@ class Despot
         @username = username
         @password = password
         @outputdir = outputdir
+        @metacache = {} # in-memory transient cache for now
         @socket = TCPSocket.new(host, port)
         @playlists = []
         @tracks = {}
         @track_cache = {}
+    end
+
+    def init_metacache
+    end
+
+    def album_metadata(aid)
+        if not @metacache[aid].nil? then
+            return @metacache[aid]
+        end
+
+        # not cached, we need to look it up from the web API
+        aid_uri = id2uri(aid)
+        $stderr.puts "W #{aid} #{aid_uri}"
+        uri = "http://ws.spotify.com/lookup/1/?uri=spotify:album:#{aid_uri}"
+        xml_meta = open(uri).read
+        $stderr.puts xml_meta
+        aid_meta = {}
+        aid_meta[:id] = Hash.new()
+        if not xml_meta.nil? then
+            xml_dom = Nokogiri::XML(xml_meta)
+
+            if xml_dom.nil? then
+                return nil
+            end
+
+            # I hate having to do this
+            xml_dom.remove_namespaces!
+
+            # collect all the album metadata bits here
+            xml_dom.search("/album/id").each do |idnode|
+                id_type = idnode['type']
+                aid_meta[:id][id_type] = idnode.inner_text.strip
+            end
+        else
+            return nil
+        end
+
+        @metacache[aid] = aid_meta
+        return aid_meta
     end
 
     def write_playlist(playlist)
@@ -96,6 +140,19 @@ class Despot
             if not track[:index].nil? then
                   t.tracknum = track[:index].to_s
             end
+            # do we have any album metadata?
+            if not track[:album_meta].nil? then
+                # we always have a :id subkey by design
+                # FIXME extend this to check for keys.size>0 and then smoosh upc into identifier with a grep
+                upc = track[:album_meta][:id]['upc']
+
+                # we have a UPC, smoosh it into the identifier if we have one
+                if not upc.nil? then
+                    old = t.identifier
+                    t.identifier = [old, "upc:#{upc}"].join(' ')
+                end
+            end
+
             tl << t
         end
 
@@ -220,12 +277,15 @@ end
             title = dom.at("//track/title").inner_text.strip
             artist = dom.at("//track/artist").inner_text.strip
             album = dom.at("//track/album").inner_text.strip
+            album_id = dom.at("//track/album-id").inner_text.strip
             index = dom.at("//track/track-number").inner_text.strip
             duration = dom.at("//track/length").inner_text.strip
 
             uri = id2uri(tid)
 
-            track = {:title => title, :artist => artist, :album => album, :tid => tid, :uri => uri, :index => index, :duration => duration}
+            almeta = self.album_metadata(album_id)
+
+            track = {:title => title, :artist => artist, :album => album, :tid => tid, :uri => uri, :index => index, :duration => duration, :aid => album_id, :album_meta => almeta}
 
             eid = dom.at("//track/external-ids/external-id")
             if not eid.nil? and eid['type'] == 'isrc' then
