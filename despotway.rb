@@ -106,6 +106,7 @@ class Despot
                    :creator => "Spotify/#{username}", # spotify link?
                    :info => "http://open.spotify.com/user/#{playlist[:user]}",
                    :location => "http://open.spotify.com/user/#{playlist[:user]}/playlist/#{pluri}",
+                   :identifier => "http://open.spotify.com/user/#{playlist[:user]}/playlist/#{pluri}",
                    :tracklist => tl,
                    :meta_rel => 'http://www.example.org/key',
                    :meta_content => 'value'
