@@ -201,8 +201,8 @@ end
 
         if tid =~ /^spotify:local/ then
             # we can't look this track up remotely
-            s, l, artist, album, title, index = tid.split(/:/).map{|i| URI.unescape(i.gsub(/\+/,' '))}
-            track = {:title => title, :artist => artist, :album => album, :tid => tid, :uri => tid}
+            s, l, artist, album, title, duration = tid.split(/:/).map{|i| URI.unescape(i.gsub(/\+/,' '))}
+            track = {:title => title, :artist => artist, :album => album, :tid => tid, :uri => tid, :duration = 1000*duration.to_i}
             @track_cache[tid] = track
             return track
         end
