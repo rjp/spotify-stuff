@@ -12,14 +12,12 @@ EncodeAlphabet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ
 EncodeHash = {}
 EncodeAlphabet.split('').each_with_index {|l,i| EncodeHash[l] = i}
 
-def id2uri(id)
-    frombase = 16
-    tobase = 62
+def baseconvert(input, frombase, tobase)
     padlen = 22
 
     out = ' ' * padlen
     padlen = padlen - 1
-    numbers = id.split('').map {|h| EncodeHash[h]}
+    numbers = input.split('').map {|h| EncodeHash[h]}
     len = numbers.size
 
     loop do
@@ -49,6 +47,14 @@ def id2uri(id)
     # we might not have used up all 22 characters here
     # remove any prefixed whitespace (spotted by andym)
     return out.strip
+end
+
+def id2uri(input)
+    return baseconvert(input, 16, 62)
+end
+
+def uri2id(input)
+    return baseconvert(input, 62, 16)
 end
 
 ### Despot ## our interface to despotify-gateway
@@ -273,6 +279,10 @@ end
             track = {:title => title, :artist => artist, :album => album, :tid => tid, :uri => tid, :duration => (1000*duration.to_i).to_s}
             @track_cache[tid] = track
             return track
+        end
+
+        if tid =~ /^spotify:track:(.*)/ then
+            $stderr.puts "TU #{tid}"
         end
 
         # trim to 32 hex characters
