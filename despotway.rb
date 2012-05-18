@@ -149,7 +149,7 @@ class Despot
                 # we have a UPC, smoosh it into the identifier if we have one
                 if not upc.nil? then
                     old = t.identifier
-                    t.identifier = [old, "upc:#{upc}"].join(' ')
+                    t.identifier = [old, "upc:#{upc}"].join('')
                 end
             end
 
