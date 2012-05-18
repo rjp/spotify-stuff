@@ -150,11 +150,16 @@ class Despot
         $stderr.puts r.inspect
     end
 
-    def load_playlists(outputdir, username)
+    def load_all_playlists
         $stderr.puts("L /pl/all")
         dom, junk = self.cmd("playlist", "0000000000000000000000000000000000")
         playlist_ids = dom.at("//items").inner_text.strip.split(',').map{|pid| pid.strip}
-        playlist_ids[0..2].each do |p|
+
+        self.load_playlists(playlist_ids)
+    end
+
+    def load_playlists(playlist_ids)
+        playlist_ids.each do |p|
             $stderr.puts("L /pl/#{p[0..33]}")
             pl = self.load_playlist(p[0..33])
             if not pl.nil? then
@@ -255,4 +260,9 @@ end
 
 dsp = Despot.new(username, password, 'localhost', 9988, outputdir)
 dsp.login()
-dsp.load_playlists(outputdir, username)
+
+if ARGV.size > 0 then # a list of playlist IDs
+    dsp.load_playlists(ARGV)
+else
+    dsp.load_all_playlists()
+end
