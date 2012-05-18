@@ -83,7 +83,13 @@ class Despot
         aid_uri = id2uri(aid)
         $stderr.puts "W #{aid} #{aid_uri}"
         uri = "http://ws.spotify.com/lookup/1/?uri=spotify:album:#{aid_uri}"
-        xml_meta = open(uri).read
+        begin
+            xml_meta = open(uri).read
+        rescue
+            $stderr.puts "!! http://ws.spotify.com/lookup/1/?uri=spotify:album:#{aid_uri} #{aid}"
+            # return nil if we can't read from the API
+            return nil
+        end
         $stderr.puts xml_meta
         aid_meta = {}
         aid_meta[:id] = Hash.new()
