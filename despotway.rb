@@ -5,6 +5,8 @@ require 'socket'
 require 'xspf'
 require 'uri'
 
+### id2uri ## cargo-culted from lib/despotify.c
+
 EncodeAlphabet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ+/";
 EncodeHash = {}
 EncodeAlphabet.split('').each_with_index {|l,i| EncodeHash[l] = i}
@@ -48,6 +50,7 @@ def id2uri(id)
     return out.strip
 end
 
+### Despot ## our interface to despotify-gateway
 
 class Despot
     attr_accessor :username, :password, :host, :port
@@ -202,7 +205,7 @@ end
         if tid =~ /^spotify:local/ then
             # we can't look this track up remotely
             s, l, artist, album, title, duration = tid.split(/:/).map{|i| URI.unescape(i.gsub(/\+/,' '))}
-            track = {:title => title, :artist => artist, :album => album, :tid => tid, :uri => tid, :duration = 1000*duration.to_i}
+            track = {:title => title, :artist => artist, :album => album, :tid => tid, :uri => tid, :duration => 1000*duration.to_i}
             @track_cache[tid] = track
             return track
         end
