@@ -133,10 +133,10 @@ class Despot
             # spotify:track:6sVQNUvcVFTXvlk3ec0ngd
             t = XSPF::Track.new( {
                   :location => track[:to_link],
-                  :title => track[:title].sq,
-                  :creator => track[:artist].sq,
-                  :album => track[:album].sq,
-                  :duration => track[:duration].sq
+                  :title => track[:title].to_s.sq,
+                  :creator => track[:artist].to_s.sq,
+                  :album => track[:album].to_s.sq,
+                  :duration => track[:duration].to_s.sq
                 } )
             # we don't always have an ISRC code
             if not track[:isrc].nil? then
@@ -165,7 +165,7 @@ class Despot
         pluri = id2uri(playlist[:pid][0..31])
         xspf_pl = XSPF::Playlist.new( {
                    :xmlns => 'http://xspf.org/ns/0/',
-                   :title => playlist[:name].sq,
+                   :title => playlist[:name].to_s.sq,
                    :creator => "Spotify/#{username}", # spotify link?
                    :info => "http://open.spotify.com/user/#{playlist[:user]}",
                    :location => "http://open.spotify.com/user/#{playlist[:user]}/playlist/#{pluri}",
@@ -265,7 +265,7 @@ end
         if tid =~ /^spotify:local/ then
             # we can't look this track up remotely
             s, l, artist, album, title, duration = tid.split(/:/).map{|i| URI.unescape(i.gsub(/\+/,' '))}
-            track = {:title => title, :artist => artist, :album => album, :tid => tid, :uri => tid, :duration => 1000*duration.to_i}
+            track = {:title => title, :artist => artist, :album => album, :tid => tid, :uri => tid, :duration => (1000*duration.to_i).to_s}
             @track_cache[tid] = track
             return track
         end
