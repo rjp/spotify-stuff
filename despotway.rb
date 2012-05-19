@@ -2,7 +2,6 @@ require 'rubygems'
 require 'nokogiri'
 require 'json'
 require 'socket'
-require 'xspf'
 require 'uri'
 require 'open-uri'
 
@@ -128,67 +127,62 @@ class Despot
         rescue
         end
 
-        tl = XSPF::Tracklist.new()
-        playlist[:tracks].each do |track|
-            # A finger of fudge is not enough to paper over the gash of the Spotify API
-            if track[:uri] =~ /^spotify/ then
-                track[:to_link] = track[:uri]
-            else
-                if track[:uri].nil? then # shouldn't happen because we protect against this in load_track
-                    $stderr.puts "!! #{track.inspect} has no URI in output"
-                    track[:uri] = "_daddy_"
-                end
-                track[:to_link] = "http://open.spotify.com/track/" + track[:uri]
-            end
-            # spotify:track:6sVQNUvcVFTXvlk3ec0ngd
-            t = XSPF::Track.new( {
-                  :location => track[:to_link],
-                  :title => track[:title].to_s.sq,
-                  :creator => track[:artist].to_s.sq,
-                  :album => track[:album].to_s.sq,
-                  :duration => track[:duration].to_s.sq
-                } )
-            # we don't always have an ISRC code
-            if not track[:isrc].nil? then
-                  t.identifier = "isrc:" + track[:isrc]
-            end
-            # we don't always have a track number
-            if not track[:index].nil? then
-                  t.tracknum = track[:index].to_s
-            end
-            # do we have any album metadata?
-            if not track[:album_meta].nil? then
-                # we always have a :id subkey by design
-                # FIXME extend this to check for keys.size>0 and then smoosh upc into identifier with a grep
-                upc = track[:album_meta][:id]['upc']
+        pluri = id2uri(playlist[:pid][0..31])
+        pl = Nokogiri::XML::Builder.new(:encoding => 'UTF-8') do |xml|
+            xml.playlist('version' => '1', 'xmlns' => 'http://xspf.org/ns/0/') {
+                xml.title playlist[:name].to_s
+                xml.creator "Spotify/#{username}" # spotify link?
+                xml.info "http://open.spotify.com/user/#{playlist[:user]}"
+                xml.location "http://open.spotify.com/user/#{playlist[:user]}/playlist/#{pluri}"
+                xml.identifier "http://open.spotify.com/user/#{playlist[:user]}/playlist/#{pluri}"
+                xml.meta Time.now.to_i, :rel => "http://frottage.org/xspf/created/epoch"
+                xml.meta "despotway.rb", :rel => "http://frottage.org/xspf/creator"
+                xml.trackList {
+                    playlist[:tracks].each do |track|
+                        # TODO refactor this out into a sanitising function
+                        if track[:uri] =~ /^spotify/ then
+                            track[:to_link] = track[:uri]
+                        else
+                            if track[:uri].nil? then # shouldn't happen because we protect against this in load_track
+                                $stderr.puts "!! #{track.inspect} has no URI in output"
+                                track[:uri] = "_daddy_"
+                            end
+                            track[:to_link] = "http://open.spotify.com/track/" + track[:uri]
+                        end
+                        xml.track {
+                            xml.location track[:to_link]
+                            xml.title track[:title].to_s
+                            xml.creator track[:artist].to_s
+                            xml.album track[:album].to_s
+                            xml.duration track[:duration].to_s
+                            # we don't always have an ISRC code
+                            if not track[:isrc].nil? then
+                                  xml.identifier "isrc:" + track[:isrc]
+                            end
+                            # we don't always have a track number
+                            if not track[:index].nil? then
+                                  xml.trackNum track[:index].to_s
+                            end
+                            # do we have any album metadata?
+                            if not track[:album_meta].nil? then
+                                # we always have a :id subkey by design
+                                # FIXME extend this to check for keys.size>0 and then smoosh upc into identifier with a grep
+                                upc = track[:album_meta][:id]['upc']
 
-                # we have a UPC, smoosh it into the identifier if we have one
-                if not upc.nil? then
-                    old = t.identifier
-                    t.identifier = [old, "upc:#{upc}"].join(';')
-                end
-            end
-
-            tl << t
+                                # we have a UPC smoosh it into the identifier if we have one
+                                if not upc.nil? then
+                                    xml.identifier "upc:#{upc}"
+                                end
+                            end
+                        }
+                    end
+                }
+            }
         end
 
-        pluri = id2uri(playlist[:pid][0..31])
-        xspf_pl = XSPF::Playlist.new( {
-                   :xmlns => 'http://xspf.org/ns/0/',
-                   :title => playlist[:name].to_s.sq,
-                   :creator => "Spotify/#{username}", # spotify link?
-                   :info => "http://open.spotify.com/user/#{playlist[:user]}",
-                   :location => "http://open.spotify.com/user/#{playlist[:user]}/playlist/#{pluri}",
-                   :identifier => "http://open.spotify.com/user/#{playlist[:user]}/playlist/#{pluri}",
-                   :tracklist => tl,
-                   :meta_rel => 'http://www.example.org/key',
-                   :meta_content => 'value'
-                 } )
-
-        xspf = XSPF.new( { :playlist => xspf_pl } )
         safename = playlist[:name].gsub(/[^0-9a-zA-Z]/, "_")
-        f = File.open(@outputdir + "/playlist-#{@username}-#{playlist[:pid]}-#{safename}.xspf", 'w')
-        f.write(xspf.to_xml)
+        f = File.open(@outputdir + "/nokogiri-#{@username}-#{playlist[:pid]}-#{safename}.xspf", 'w')
+        f.write(pl.to_xml)
         f.close
     end
 
