@@ -4,8 +4,7 @@ EncodeAlphabet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ
 EncodeHash = {}
 EncodeAlphabet.split('').each_with_index {|l,i| EncodeHash[l] = i}
 
-def baseconvert(input, frombase, tobase)
-    padlen = 22
+def baseconvert(input, frombase, tobase, padlen = 22)
 
     out = ' ' * padlen
     padlen = padlen - 1
@@ -46,5 +45,5 @@ def id2uri(input)
 end
 
 def uri2id(input)
-    return baseconvert(input, 62, 16)
+    return baseconvert(input, 62, 16, 34)
 end
