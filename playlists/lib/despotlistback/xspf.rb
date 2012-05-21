@@ -85,7 +85,31 @@ class Despot
         end
 
         safename = playlist[:name].gsub(/[^0-9a-zA-Z]/, "_")
-        f = File.open(@outputdir + "/nokogiri-#{@username}-#{playlist[:pid]}-#{safename}.xspf", 'w')
+
+        replace = {
+            "%u" => @username,
+            "%c" => playlist[:user],
+            "%w" => [@username, playlist[:user]].uniq.join(':'),
+            "%i" => playlist[:pid],
+            "%s" => playlist[:tracks].size.to_s,
+            "%d" => playlist[:user] == @username ? "" : "subscribed/",
+            "%n" => safename
+        }
+
+        filename = "#{$options[:format]}"
+        replace.each do |k,v|
+            filename.gsub!(k, v)
+        end
+
+        path = @outputdir + "/" + filename
+        basedir = File.dirname(path)
+
+        begin
+            Dir.mkdir(basedir)
+        rescue
+        end
+
+        f = File.open(@outputdir + "/#{filename}", "w")
         f.write(pl.to_xml)
         f.close
     end
