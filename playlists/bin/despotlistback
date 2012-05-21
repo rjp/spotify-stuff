@@ -1,3 +1,5 @@
+#! /usr/bin/env ruby
+
 require 'rubygems'
 require 'nokogiri'
 require 'json'
@@ -214,25 +216,17 @@ class String
   end
 end
 
-config = JSON.load(open(ENV['HOME'] + '/.spotify.rb'))
-username = config['username']
-password = config['password']
+username, password = $options[:login].split(':', 2)
 
-# # #
-
-# outputdir = ENV['HOME'] + '/playlists.xspf'
-outputdir = './playlists.xspf'
-
-begin
-    Dir.mkdir(outputdir)
-rescue
-end
-
-dsp = Despot.new(username, password, 'localhost', 9988, outputdir)
+dsp = Despot.new(username, password, $options[:host], $options[:port], $options[:output])
 dsp.login()
 
-if ARGV.size > 0 then # a list of playlist IDs
-    dsp.load_playlists(ARGV)
-else
+playlists = $options[:playlist].to_s.split(',')
+# backward compatibility
+playlists << ARGV
+
+if playlists.size == 0 then
     dsp.load_all_playlists()
+else
+    dsp.load_playlists(playlists.flatten)
 end

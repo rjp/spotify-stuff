@@ -9,7 +9,7 @@ $options = {
     :verbose => nil,
     :debug => nil,
     :playlist => nil,
-    :outputdir => nil
+    :output => 'playlists.xspf'
 }
 
 OptionParser.new do |opts|
@@ -39,12 +39,12 @@ OptionParser.new do |opts|
     $options[:debug] = v
   end
 
-  opts.on("-p", "--playlist playlistid[,playlistid]", String, "Playlist ID(s)") do |p|
-    $options[:playlist] = p
+  opts.on("-o", "--output dir", String, "Output directory") do |p|
+    $options[:output] = p
   end
 
-  opts.on("-o", "--output", String, "Output directory") do |o|
-    $options[:output] = o
+  opts.on("-i", "--playlist playlistid[,playlistid]", String, "Playlist ID(s)") do |p|
+    $options[:playlist] = p
   end
 
 end.parse!
@@ -56,16 +56,16 @@ if $options[:login].nil? then
     end
 end
 
-# TODO handle failing here with exceptions
-config = JSON::load(open($options[:config]))
-
-# merge the whole of the config file into the $options hash
-config.each { |k,v|
-    $options[k.to_sym] = v
-}
-
 # We've got here through the config file
 if $options[:login].nil? then
+# TODO handle failing here with exceptions
+    config = JSON::load(open($options[:config]))
+
+# merge the whole of the config file into the $options hash
+    config.each { |k,v|
+        $options[k.to_sym] = v
+    }
+
     if $options[:username].nil? or $options[:password].nil? then
         $stderr.puts "Config file is not well-specified"
         exit
