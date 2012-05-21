@@ -1,3 +1,5 @@
+require 'fileutils'
+
 require 'rubygems'
 require 'nokogiri'
 require 'despotlistback/convert'
@@ -13,7 +15,7 @@ end
 class Despot
     def write_playlist(playlist)
         begin
-            Dir.mkdir(@outputdir)
+            FileUtils.mkdir_p(@outputdir)
         rescue
         end
 
@@ -105,7 +107,7 @@ class Despot
         basedir = File.dirname(path)
 
         begin
-            Dir.mkdir(basedir)
+            FileUtils.mkdir_p(basedir)
         rescue
         end
 
