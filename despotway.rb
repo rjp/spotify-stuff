@@ -178,6 +178,15 @@ class Despot
                                   xml.trackNum track[:index].to_s
                             end
 
+                            # if we have :arid, this is a real Spotify track, add extra links for niceness
+                            if not track[:arid].nil? then
+                                xml.meta track[:arid], :rel => "http://frottage.org/xspf/spotify/artist-id"
+                                xml.meta track[:aid], :rel => "http://frottage.org/xspf/spotify/album-id"
+                                xml.meta track[:tid], :rel => "http://frottage.org/xspf/spotify/track-id"
+                                l_artist = id2uri(track[:arid])
+                                l_album = id2uri(track[:aid])
+                                xml.meta "http://open.spotify.com/artist/#{l_artist}", :rel => "http://frottage.org/xspf/spotify/artist"
+                                xml.meta "http://open.spotify.com/album/#{l_album}", :rel => "http://frottage.org/xspf/spotify/album"
                             end
                         }
                     end
