@@ -5,6 +5,7 @@ require 'socket'
 require 'uri'
 require 'open-uri'
 
+require 'despotlistback/options'
 require 'despotlistback/convert'
 require 'despotlistback/xspf'
 
