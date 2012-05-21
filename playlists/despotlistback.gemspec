@@ -1,6 +1,6 @@
 spec = Gem::Specification.new do |s| 
   s.name = "despotlistback"
-  s.version = "0.0.2"
+  s.version = "0.0.3"
   s.author = "Rob Partington"
   s.email = "rjpartington@gmail.com"
   s.homepage = "http://rjp.github.com/spotify-stuff"
