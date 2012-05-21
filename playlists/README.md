@@ -17,6 +17,8 @@ Use despotify-gateway to backup your Spotify playlists into XSPF files.
 
 ## PLAYLIST FILE NAMING OPTIONS
 
+Supply the -f (--format) option to despotlistback with a collection of the following:
+
     %u => Username of the current session
     %c => Owner of the playlist
     %w => "username:owner" if they differ, else "username"
