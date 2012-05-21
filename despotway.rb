@@ -155,24 +155,29 @@ class Despot
                             xml.creator track[:artist].to_s
                             xml.album track[:album].to_s
                             xml.duration track[:duration].to_s
+
                             # we don't always have an ISRC code
                             if not track[:isrc].nil? then
                                   xml.identifier "isrc:" + track[:isrc]
                             end
+
+                            # do we have any album metadata to add?
+                            if not track[:album_meta].nil? then
+                                # we always have a :id subhash by design tho' it may be empty
+                                track[:album_meta][:id].keys.each do |id_type|
+                                    val = track[:album_meta][:id][id_type]
+                                    # anything in the [:id] hash gets added as that type of identifier 
+                                    if not val.nil? then
+                                        xml.identifier "#{id_type}:#{val}"
+                                    end
+                                end
+                            end
+
                             # we don't always have a track number
                             if not track[:index].nil? then
                                   xml.trackNum track[:index].to_s
                             end
-                            # do we have any album metadata?
-                            if not track[:album_meta].nil? then
-                                # we always have a :id subkey by design
-                                # FIXME extend this to check for keys.size>0 and then smoosh upc into identifier with a grep
-                                upc = track[:album_meta][:id]['upc']
 
-                                # we have a UPC smoosh it into the identifier if we have one
-                                if not upc.nil? then
-                                    xml.identifier "upc:#{upc}"
-                                end
                             end
                         }
                     end
