@@ -290,6 +290,7 @@ end
         if success > 0 then
             title = dom.at("//track/title").inner_text.strip
             artist = dom.at("//track/artist").inner_text.strip
+            artist_id = dom.at("//track/artist-id").inner_text.strip
             album = dom.at("//track/album").inner_text.strip
             album_id = dom.at("//track/album-id").inner_text.strip
             index = dom.at("//track/track-number").inner_text.strip
@@ -303,7 +304,7 @@ end
 
             almeta = self.album_metadata(album_id)
 
-            track = {:title => title, :artist => artist, :album => album, :tid => tid, :uri => uri, :index => index, :duration => duration, :aid => album_id, :album_meta => almeta}
+            track = {:title => title, :artist => artist, :album => album, :tid => tid, :uri => uri, :index => index, :duration => duration, :aid => album_id, :album_meta => almeta, :arid => artist_id}
 
             eid = dom.at("//track/external-ids/external-id")
             if not eid.nil? and eid['type'] == 'isrc' then
