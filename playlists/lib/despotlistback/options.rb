@@ -1,3 +1,4 @@
+require 'optparse'
 require 'json'
 
 $options = {
