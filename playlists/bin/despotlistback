@@ -221,9 +221,14 @@ username, password = $options[:login].split(':', 2)
 dsp = Despot.new(username, password, $options[:host], $options[:port], $options[:output])
 dsp.login()
 
+# Has the user specified any playlists to load?
 playlists = $options[:playlist].to_s.split(',')
+
 # backward compatibility
 playlists << ARGV
+
+# We might have [[]] here which isn't what we want
+playlists.flatten!
 
 if playlists.size == 0 then
     dsp.load_all_playlists()
