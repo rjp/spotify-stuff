@@ -2,6 +2,14 @@ require 'rubygems'
 require 'nokogiri'
 require 'despotlistback/convert'
 
+# http://wiki.xiph.org/XSPF_v1_Notes_and_Errata#Version_information_in_key_attributes
+MetaBase = "http://frottage.org/xspf/spotify/"
+MetaVer = "/1/0"
+
+def metauri(key)
+    return MetaBase + key + MetaVer
+end
+
 class Despot
     def write_playlist(playlist)
         begin
@@ -17,8 +25,8 @@ class Despot
                 xml.info "http://open.spotify.com/user/#{playlist[:user]}"
                 xml.location "http://open.spotify.com/user/#{playlist[:user]}/playlist/#{pluri}"
                 xml.identifier "http://open.spotify.com/user/#{playlist[:user]}/playlist/#{pluri}"
-                xml.meta Time.now.to_i, :rel => "http://frottage.org/xspf/created/epoch"
-                xml.meta "despotway.rb", :rel => "http://frottage.org/xspf/creator"
+                xml.meta Time.now.to_i, :rel => metauri("epoch")
+                xml.meta "despotway.rb", :rel => metauri("creator")
                 xml.trackList {
                     playlist[:tracks].each do |track|
                         # TODO refactor this out into a sanitising function
@@ -62,13 +70,13 @@ class Despot
 
                             # if we have :arid, this is a real Spotify track, add extra links for niceness
                             if not track[:arid].nil? then
-                                xml.meta track[:arid], :rel => "http://frottage.org/xspf/spotify/artist-id"
-                                xml.meta track[:aid], :rel => "http://frottage.org/xspf/spotify/album-id"
-                                xml.meta track[:tid], :rel => "http://frottage.org/xspf/spotify/track-id"
+                                xml.meta track[:arid], :rel => metauri("artist-id")
+                                xml.meta track[:aid], :rel => metauri("album-id")
+                                xml.meta track[:tid], :rel => metauri("track-id")
                                 l_artist = id2uri(track[:arid])
                                 l_album = id2uri(track[:aid])
-                                xml.meta "http://open.spotify.com/artist/#{l_artist}", :rel => "http://frottage.org/xspf/spotify/artist"
-                                xml.meta "http://open.spotify.com/album/#{l_album}", :rel => "http://frottage.org/xspf/spotify/album"
+                                xml.meta "http://open.spotify.com/artist/#{l_artist}", :rel => metauri("artist")
+                                xml.meta "http://open.spotify.com/album/#{l_album}", :rel => metauri("album")
                             end
                         }
                     end
