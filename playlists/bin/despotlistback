@@ -11,6 +11,8 @@ require 'despotlistback/options'
 require 'despotlistback/convert'
 require 'despotlistback/xspf'
 
+require 'despotify'
+
 ### DespoGClient ## our interface to despotify-gateway
 
 class DespoGClient
@@ -18,14 +20,12 @@ class DespoGClient
     attr_accessor :track_cache, :outputdir, :metacache, :metafile
     attr_accessor :socket, :playlists, :tracks
 
-    def initialize(username, password, host, port, outputdir)
-        @host = host
-        @port = port
+    def initialize(username, password, outputdir)
         @username = username
         @password = password
         @outputdir = outputdir
         @metacache = {} # in-memory transient cache for now
-        @socket = TCPSocket.new(host, port)
+        @session = Despotify::Session.new
         @playlists = []
         @tracks = {}
         @track_cache = {}
@@ -105,49 +105,28 @@ class DespoGClient
     end
 
     def login
-        r = self.cmd("login", @username, @password)
-        $stderr.puts r.inspect
+        @session.authenticate(@username, @password)
     end
 
     def load_all_playlists
         $stderr.puts("L /pl/all")
-        dom, junk = self.cmd("playlist", "0000000000000000000000000000000000")
-        playlist_ids = dom.at("//items").inner_text.strip.split(',').map{|pid| pid.strip}
-
-        self.load_playlists(playlist_ids)
+        a = @session.stored_playlists
     end
 
     def load_playlists(playlist_ids)
+
         playlist_ids.each do |p|
             $stderr.puts("L /pl/#{p[0..33]}")
             pl = self.load_playlist(p[0..33])
             if not pl.nil? then
+            $stderr.puts "=========***************=========="
                 self.write_playlist(pl)
             end
         end
     end
 
     def load_playlist(pid)
-        dom, junk = self.cmd("playlist", pid)
-if dom.nil? then
-    raise ArgumentError, junk.inspect
-end
-        user = dom.at("//user").inner_text.strip
-
-#        if user != @username then
-#            $stderr.puts "We don't handle subscribed playlists properly yet, sorry!"
-#            return nil
-#        end
-
-        name = dom.at("//name").inner_text.strip
-        # need the map/strip because occasional tids have a \n prefix
-        track_ids = dom.at("//items").inner_text.strip.split(",").map{|tid| tid.strip}
-
-        # fetch information about our tracks from the API (or not the API, depending)
-        tracks = track_ids.map {|tid| self.load_track(tid)}
-
-        $stderr.puts "+ playlist #{name}"
-        x = {:name => name, :pid => pid, :tracks => tracks, :user => user}
+        x = Despotify::Playlist.new(@session, pid[0..33])
         @playlists << x
         return x
     end
@@ -218,7 +197,7 @@ end
 
 username, password = $options[:login].split(':', 2)
 
-dsp = DespoGClient.new(username, password, $options[:host], $options[:port], $options[:output])
+dsp = DespoGClient.new(username, password, $options[:output])
 dsp.login()
 
 # Has the user specified any playlists to load?
