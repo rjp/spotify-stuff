@@ -11,9 +11,9 @@ require 'despotlistback/options'
 require 'despotlistback/convert'
 require 'despotlistback/xspf'
 
-### Despot ## our interface to despotify-gateway
+### DespoGClient ## our interface to despotify-gateway
 
-class Despot
+class DespoGClient
     attr_accessor :username, :password, :host, :port
     attr_accessor :track_cache, :outputdir, :metacache, :metafile
     attr_accessor :socket, :playlists, :tracks
@@ -218,7 +218,7 @@ end
 
 username, password = $options[:login].split(':', 2)
 
-dsp = Despot.new(username, password, $options[:host], $options[:port], $options[:output])
+dsp = DespoGClient.new(username, password, $options[:host], $options[:port], $options[:output])
 dsp.login()
 
 # Has the user specified any playlists to load?

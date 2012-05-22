@@ -12,7 +12,7 @@ def metauri(key)
     return MetaBase + key + MetaVer
 end
 
-class Despot
+class DespoGClient
     def write_playlist(playlist)
         begin
             FileUtils.mkdir_p(@outputdir)
