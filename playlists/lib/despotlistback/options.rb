@@ -9,11 +9,12 @@ $options = {
     :verbose => nil,
     :debug => nil,
     :playlist => nil,
-    :output => 'playlists.xspf'
+    :output => 'playlists.xspf',
+    :format => '%u-%c-%i-%n.xspf'
 }
 
 OptionParser.new do |opts|
-  opts.banner = "Usage: despotlistback [-p port] [-h host] [-l username:password] [-v] [-d] [-p playlistid] [-o dir]"
+  opts.banner = "Usage: despotlistback [-p port] [-h host] [-l username:password] [-v] [-d] [-p playlistid] [-o dir] [-f format]"
 
   opts.on("-p", "--port N", Integer, "despotify-gateway port") do |p|
     $options[:port] = p
@@ -46,6 +47,11 @@ OptionParser.new do |opts|
   opts.on("-i", "--playlist playlistid[,playlistid]", String, "Playlist ID(s)") do |p|
     $options[:playlist] = p
   end
+
+  opts.on("-f", "--format format", String, "Output filename format") do |p|
+    $options[:format] = p
+  end
+
 
 end.parse!
 

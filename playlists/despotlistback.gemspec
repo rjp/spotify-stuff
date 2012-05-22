@@ -1,6 +1,6 @@
 spec = Gem::Specification.new do |s| 
   s.name = "despotlistback"
-  s.version = "0.0.2"
+  s.version = "0.0.4"
   s.author = "Rob Partington"
   s.email = "rjpartington@gmail.com"
   s.homepage = "http://rjp.github.com/spotify-stuff"
@@ -15,7 +15,7 @@ spec = Gem::Specification.new do |s|
   s.executables = ['despotlistback']
   s.has_rdoc = true
   s.extra_rdoc_files = [
-    "README.txt"
+    "README.md"
   ]
   s.rubyforge_project = 'despotlistback'
 end
