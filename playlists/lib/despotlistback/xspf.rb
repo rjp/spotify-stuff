@@ -1,9 +1,9 @@
-# Output our collection of tracks as an XSPF-compliant playlist. 
+# Output our collection of tracks as an XSPF-compliant playlist.
 #
-# [xspf]: http://xspf.org/xspf-v1.html 
+# [xspf]: http://xspf.org/xspf-v1.html
 # [notes]: http://wiki.xiph.org/XSPF_v1_Notes_and_Errata
 # [xspfgem]: http://xspf.rubyforge.org/
-# 
+#
 # Because we want to use multiple <meta> and <identifier> elements, we can't use the [xspf gem][xspfgem].
 # In lieu of a proper libxspf based alternative, we use Nokogiri::XML::Builder to construct our XML output.
 
@@ -23,7 +23,7 @@ def metauri(key)
     return MetaBase + key + MetaVer
 end
 
-# "Naming is hard". 
+# "Naming is hard".
 class DespoGClient
     def write_playlist(playlist)
         # Technically this is redundant since we do this later on. FIXME
@@ -45,35 +45,51 @@ class DespoGClient
                 xml.meta "despotway.rb", :rel => metauri("creator")
                 xml.trackList {
                     playlist.tracks.each do |track|
-                        uri = id2uri(track.id)
+                        to_link = nil
+                        p track['id']
+                        if track['id'] =~ /spotify:local/ then
+                            s, l, artist, album, title, duration = track['id'].split(/:/).map{|i| URI.unescape(i.gsub(/\+/,' '))}
+                            b = {:title => title, 'artists' => [artist], :album => album, :id => track['id'], :uri => track['id'], :length => (1000*duration.to_i).to_s}
+                            xml.track {
+                                xml.location track['id']
+                                xml.title title.to_s
+                                xml.creator artist.to_s
+                                xml.album album.to_s
+                                xml.duration (1000*duration.to_i).to_s
+                            }
+                            next
+                        end
+
+                        track.metadata['album_meta'] = self.album_metadata(track['album_id'])
+
+                        uri = id2uri(track['id'])
                         to_link = "http://open.spotify.com/track/" + uri
+                        p track.metadata
                         artist = track.artists.first # meh
 
                         xml.track {
                             xml.location to_link
                             xml.location track.to_uri
-                            xml.title track.title.to_s
-                            xml.creator artist.name.to_s
-                            xml.album track.album.to_s
-                            xml.duration track.length.to_s
+                            xml.title track['title'].to_s
+                            xml.creator artist['name'].to_s
+                            xml.album track['album'].to_s
+                            xml.duration track['length'].to_s
 
-                            $stderr.puts track.metadata.inspect
-#                            # we don't always have an ISRC code
-#                            if not track[:isrc].nil? then
-#                                  xml.identifier "isrc:" + track[:isrc]
-#                            end
-#
+                            # we don't always have an ISRC code
+                            track['external_ids'].each do |k,v|
+                                xml.identifier "#{k}:" + v
+                            end
+
 #                            # do we have any album metadata to add?
-#                            if not track[:album_meta].nil? then
-#                                # we always have a :id subhash by design tho' it may be empty
-#                                track[:album_meta][:id].keys.each do |id_type|
-#                                    val = track[:album_meta][:id][id_type]
-#                                    # anything in the [:id] hash gets added as that type of identifier 
-#                                    if not val.nil? then
-#                                        xml.identifier "#{id_type}:#{val}"
-#                                    end
-#                                end
-#                            end
+                            if not track['album_meta'].nil? then
+                                # we always have a :id subhash by design tho' it may be empty
+                                track['album_meta']['external_ids'].each do |id_type, val|
+                                    # anything in the [:id] hash gets added as that type of identifier
+                                    if not val.nil? and not val.empty? then
+                                        xml.identifier "#{id_type}:#{val}"
+                                    end
+                                end
+                            end
 
                             # we don't always have a track number
                             if not track.tracknumber.nil? then
@@ -81,9 +97,9 @@ class DespoGClient
                             end
 
                             # if we have :arid, this is a real Spotify track, add extra links for niceness
-                            if not artist.id.nil? then
+                            if not artist['id'].nil? then
                                 xml.meta artist.id, :rel => metauri("artist-id")
-                                xml.meta track.album_id, :rel => metauri("album-id")
+                                xml.meta track['album_id'], :rel => metauri("album-id")
                                 xml.meta track.id, :rel => metauri("track-id")
                                 l_artist = id2uri(artist.id)
                                 l_album = id2uri(track.album_id)

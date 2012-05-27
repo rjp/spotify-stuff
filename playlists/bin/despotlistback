@@ -7,14 +7,22 @@ require 'socket'
 require 'uri'
 require 'open-uri'
 
+#
 require 'despotlistback/options'
 require 'despotlistback/convert'
 require 'despotlistback/xspf'
 
+# Ruby bindings for libdespotify - currently from http://github.com/rjp/despotify-ruby
 require 'despotify'
 
-### DespoGClient ## our interface to despotify-gateway
+# Rather than use [Mash][mash] and add another dependency, we fake methods by redirecting them to metadata lookups.
+class Despotify::Track
+    def method_missing method_name, *args, &block
+        return self.metadata[method_name.to_s]
+    end
+end
 
+# DespoGClient
 class DespoGClient
     attr_accessor :username, :password, :host, :port
     attr_accessor :track_cache, :outputdir, :metacache, :metafile
@@ -24,8 +32,13 @@ class DespoGClient
         @username = username
         @password = password
         @outputdir = outputdir
-        @metacache = {} # in-memory transient cache for now
+
+        # Create our (unauthenticated and useless) session to Spotify
         @session = Despotify::Session.new
+
+        # Cache album metadata in memory to reduce the number of lookups we do.
+        @metacache = {}
+
         @playlists = []
         @tracks = {}
         @track_cache = {}
@@ -39,71 +52,12 @@ class DespoGClient
             return @metacache[aid]
         end
 
-        # not cached, we need to look it up from the web API
-        aid_uri = id2uri(aid)
-        $stderr.puts "W #{aid} #{aid_uri}"
-        uri = "http://ws.spotify.com/lookup/1/?uri=spotify:album:#{aid_uri}"
-        begin
-            xml_meta = open(uri).read
-        rescue
-            $stderr.puts "!! http://ws.spotify.com/lookup/1/?uri=spotify:album:#{aid_uri} #{aid}"
-            # return nil if we can't read from the API
-            return nil
-        end
-        $stderr.puts xml_meta
-        aid_meta = {}
-        aid_meta[:id] = Hash.new()
-        if not xml_meta.nil? then
-            xml_dom = Nokogiri::XML(xml_meta)
-
-            if xml_dom.nil? then
-                return nil
-            end
-
-            # I hate having to do this
-            xml_dom.remove_namespaces!
-
-            # collect all the album metadata bits here
-            xml_dom.search("/album/id").each do |idnode|
-                id_type = idnode['type']
-                aid_meta[:id][id_type] = idnode.inner_text.strip
-            end
-        else
-            return nil
-        end
-
-        @metacache[aid] = aid_meta
-        return aid_meta
+        album = Despotify::AlbumBrowse.new(@session, aid)
+        @metacache[aid] = album
+        return album
     end
 
-    def cmd(command, *params)
-        cl = [command, params].flatten.join(' ') + "\n"
-        $stderr.puts "> #{cl.inspect}"
-        @socket.send(cl, 0)
-        response = ""
-        x = nil
-        until x == "\n" do
-            x = @socket.recv(1)
-            response = response + x
-        end
-        $stderr.puts "< #{response.inspect}"
-        code, length, status, text = response.split(' ', 4)
-        if code.to_i != 200 then
-# raise ArgumentError, text
-            return [dom, code, length, status, text, payload]
-        end
-        payload = nil
-        dom = nil
-        if length.to_i > 0 then
-            payload = @socket.read(length.to_i)
-            dom = Nokogiri::XML(payload)
-            if dom.nil? then
-# raise ArgumentError, "XML does not parse"
-            end
-        end
-        return [dom, code, length, status, text, payload]
-    end
-
+    # Authenticate ourselves to Spotify - this requires a premium account
     def login
         @session.authenticate(@username, @password)
     end
